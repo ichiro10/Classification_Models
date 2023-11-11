@@ -26,6 +26,18 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
+
+
+def perform(y_pred,y_test):
+    print("Precision : ", precision_score(y_test, y_pred,average='micro'))
+    print("Recall : ", recall_score(y_test, y_pred,average='micro'))
+    print("Accuracy : ", accuracy_score(y_test, y_pred))
+    print("F1 Score : ", f1_score(y_test, y_pred,average='micro'))
+    print('')
+    print(confusion_matrix(y_test, y_pred), '\n')
+    cm = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(y_test, y_pred))
+    cm.plot()
 
 
 def data_preprocessing(data):
@@ -84,57 +96,32 @@ def run(csv: str = './CS_Dataset.csv'):
 
         # Split the data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        if True :
+            # Define numeric and categorical features
+            numeric_features = X.select_dtypes(include=['int64']).columns
+            categorical_features = X.select_dtypes(include=['object']).columns
 
-        # Define numeric and categorical features
-        numeric_features = X.select_dtypes(include=['int64']).columns
-        categorical_features = X.select_dtypes(include=['object']).columns
-
-        # Create transformers for numeric and categorical features
-        numeric_transformer = Pipeline(steps=[
-            ('scaler', StandardScaler())
-        ])
-
-        categorical_transformer = Pipeline(steps=[
-            ('onehot', OneHotEncoder())
-        ])
-
-        # Combine transformers using ColumnTransformer
-        preprocessor = ColumnTransformer(
-            transformers=[
-                ('num', numeric_transformer, numeric_features),
-                ('cat', categorical_transformer, categorical_features)
+            # Create transformers for numeric and categorical features
+            numeric_transformer = Pipeline(steps=[
+                ('scaler', StandardScaler())
             ])
 
-        # Create a pipeline with the preprocessor and a classifier (Random Forest in this case)
-        classifier = Pipeline(steps=[
-            ('preprocessor', preprocessor),
-            ('classifier', RandomForestClassifier())
-        ])
+            categorical_transformer = Pipeline(steps=[
+                ('onehot', OneHotEncoder())
+            ])
 
-        # Fit the pipeline on the training data
-        classifier.fit(X_train, y_train)
+            # Combine transformers using ColumnTransformer
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features),
+                    ('cat', categorical_transformer, categorical_features)
+                ])
 
-        # Predictions on the test set
-        y_pred = classifier.predict(X_test)
-
-        # Evaluate the model
-        # You can use metrics like accuracy, precision, recall, etc.
-        from sklearn.metrics import accuracy_score
-        accuracy = accuracy_score(y_test, y_pred)
-        print(f'Accuracy: {accuracy}')
-        if False:
-            numerical_features = ['Age', 'Income', 'Number of Children']
-            categorical_features = ['Gender', 'Education', 'Marital Status','Home Ownership']
-
-
-
-            numerical_pipeline = make_pipeline(StandardScaler())
-            categorical_pipeline = make_pipeline(LabelEncoder())
-            # Updated the structure of the ColumnTransformer
-
-            preprocessor = make_column_transformer((numerical_pipeline, numerical_features),
-                                    (categorical_pipeline, categorical_features))
-
+            # Create a pipeline with the preprocessor and a classifier (Random Forest in this case)
+            classifier = Pipeline(steps=[
+                ('preprocessor', preprocessor),
+                ('classifier', RandomForestClassifier())
+            ])
             # List of classifiers
             clfs = [
                 ('Logistic Regression', LogisticRegression()),
@@ -145,22 +132,16 @@ def run(csv: str = './CS_Dataset.csv'):
                 ('GradientBoosting', GradientBoostingClassifier())
             ]
 
+            
             # Iterate over classifiers
             for clf_name, clf in clfs:
                 # Define the pipeline
-                model = make_pipeline(
-                    ('preprocessor', preprocessor),
-                    (clf_name, clf)
-                )
-                model.fit(X_train, y_train)
-
-
-
-
-
-            if False:
+                classifier.set_params(classifier = clf)
+                
+                # Fit the pipeline on the training data
+                classifier.fit(X_train, y_train)
                 # Cross-validate the model
-                scores = cross_validate(pipeline, X_train, y_train, scoring="accuracy", cv=5)
+                scores = cross_validate(classifier, X_train, y_train,scoring="accuracy", cv=5)
 
                 # Print results
                 print('---------------------------------')
@@ -170,13 +151,9 @@ def run(csv: str = './CS_Dataset.csv'):
                     print(key, ' mean ', values.mean())
                     print(key, ' std ', values.std())
 
-
-
-
-
-
-
- 
+                y_pred = classifier.predict(X_test)
+                perform(y_pred,y_test)
+                print(classification_report(y_test, y_pred))
 
 
 
