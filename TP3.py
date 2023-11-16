@@ -27,17 +27,29 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import precision_recall_curve, auc
+from sklearn.metrics import roc_curve, auc
 
 
-def perform(y_pred,y_test):
+
+def perform(y_pred,y_test,clf_name):
     print("Precision : ", precision_score(y_test, y_pred,average='micro'))
     print("Recall : ", recall_score(y_test, y_pred,average='micro'))
     print("Accuracy : ", accuracy_score(y_test, y_pred))
     print("F1 Score : ", f1_score(y_test, y_pred,average='micro'))
     print('')
     print(confusion_matrix(y_test, y_pred), '\n')
-    cm = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(y_test, y_pred))
-    cm.plot()
+    cm = confusion_matrix(y_test, y_pred)
+    # Créer une heatmap pour visualiser la matrice de confusion
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['low', 'average', 'high'],
+                yticklabels=['low', 'average', 'high'])
+    plt.xlabel('Prédictions')
+    plt.ylabel('Vraies étiquettes')
+    plt.title('Matrice de Confusion :'+clf_name)
+    plt.show()
+
+
+
 
 
 def data_preprocessing(data):
@@ -62,28 +74,42 @@ def data_preprocessing(data):
         print(data.describe(include='all'))
         
 
-def data_viz(data):
+def data_viz(df):
       
-        d = data.drop(columns=['Credit Score'])
-
-        for column in d.columns : 
-            plt.figure(figsize = (14,4))
-            sns.histplot(data[column])
-            plt.title(column)
-            plt.show()    
+        sns.pairplot(df)
+        plt.show()
         
-        for column in d:
-                sns.boxplot(data = data, x = column)
-                plt.show()    
 
-        features_list = [feature for feature in data.columns.tolist() if feature != 'Credit Score']
+        # Boxplot for each numerical variable
+        df.boxplot(figsize=(12, 6))
+        plt.show()
 
-        params = data[features_list]
-        plt.figure(figsize=(10,10))
-        sns.set_theme()
-        sns.heatmap(params.corr(),annot=True, fmt="0.1g", cmap='PiYG')
-        plt.show()           
-      
+        # Countplot for categorical variables
+        categorical_columns = df.select_dtypes(include=['object']).columns
+
+        for col in categorical_columns:
+            sns.countplot(x=col, data=df)
+            plt.show()
+                
+        p = sns.histplot(df["Number of Children"], color="red", kde=True, bins=50, alpha=1, fill=True, edgecolor="black")
+        p.axes.lines[0].set_color("#101B15")
+        p.axes.set_title("\n Number of Children Distribution\n", fontsize=25)
+        plt.ylabel("Count", fontsize=20)
+        plt.xlabel("Number of Children", fontsize=20)
+        sns.despine(left=True, bottom=True)
+        plt.show()
+
+        
+        p = sns.histplot(df["Age"], color="green", kde=True, bins=50, alpha=1, fill=True, edgecolor="black")
+        p.axes.lines[0].set_color("#101B15")
+        p.axes.set_title("\n Age Distribution\n", fontsize=25)
+        plt.ylabel("Count", fontsize=20)
+        plt.xlabel("Age", fontsize=20)
+        sns.despine(left=True, bottom=True)
+        plt.show()
+
+
+
 
 def run(csv: str = './CS_Dataset.csv'):
         data = pd.read_csv(csv)
@@ -152,7 +178,7 @@ def run(csv: str = './CS_Dataset.csv'):
                     print(key, ' std ', values.std())
 
                 y_pred = classifier.predict(X_test)
-                perform(y_pred,y_test)
+                perform(y_pred,y_test,clf_name)
                 print(classification_report(y_test, y_pred))
 
 
